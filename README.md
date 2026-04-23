@@ -178,10 +178,10 @@ Download `amazon.csv` from Kaggle and upload it when prompted in Step 3:
 
 | Report | Description |
 |:---|:---|
-| [📊 System Evaluation](reports/evaluation_report.html) | Animated metrics — retrieval quality, classification accuracy, clustering coherence, human usefulness |
-| [🔗 Business Integration](reports/business_integration.html) | Dashboard · Slack Bot · CRM plugin — architecture diagrams and production code |
+| [📊 System Evaluation](https://harishdeepak-msba.github.io/Amazon-NLP-pipeline/reports/evaluation_report.html) | Animated metrics — retrieval quality, classification accuracy, clustering coherence, human usefulness |
+| [🔗 Business Integration](https://harishdeepak-msba.github.io/Amazon-NLP-pipeline/reports/business_integration.html) | Dashboard · Slack Bot · CRM plugin — architecture diagrams and production code |
 
-> **Note:** Open the `.html` files locally or via GitHub Pages to view the interactive React reports.
+> **Live site:** [harishdeepak-msba.github.io/Amazon-NLP-pipeline](https://harishdeepak-msba.github.io/Amazon-NLP-pipeline/)
 
 <br/>
 
