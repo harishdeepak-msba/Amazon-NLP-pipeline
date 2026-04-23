@@ -1,168 +1,277 @@
-\# Amazon Reviews — NLP Pipeline
+<div align="center">
 
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=13&duration=3000&pause=1000&color=00E5FF&center=true&vCenter=true&width=600&lines=Sentence+Embeddings+%C2%B7+Vector+Database+%C2%B7+RAG+Pipeline;Semantic+Search+%C2%B7+Zero-Shot+Classification;K-Means+Clustering+%C2%B7+UMAP+Visualisation" alt="Typing SVG" />
 
+# Amazon Reviews — NLP Pipeline
 
-An end-to-end NLP system built on sentence embeddings and a vector database
+**End-to-end NLP system for semantic search, complaint clustering, and automated support triage**
 
-to perform semantic search, topic classification, complaint clustering,
+*MSBA Academic Project · University of Arizona · 2026*
 
-and automated support ticket triage on Amazon India product reviews.
+<br/>
 
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![sentence-transformers](https://img.shields.io/badge/sentence--transformers-all--MiniLM--L6--v2-FF6B35?style=flat-square)](https://sbert.net)
+[![ChromaDB](https://img.shields.io/badge/ChromaDB-HNSW_Index-E64980?style=flat-square)](https://www.trychroma.com)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-KMeans_·_UMAP-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
+[![Colab](https://img.shields.io/badge/Run_in-Google_Colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white)](https://colab.research.google.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=flat-square)](LICENSE)
 
+<br/>
 
-Built as an academic project for the MSBA programme at the University of Arizona.
+</div>
 
+---
 
+## ✦ What This System Does
 
-\---
+> Built on **sentence embeddings** and **ChromaDB**, this pipeline turns raw Amazon product reviews into an intelligent support triage system — with **zero labelled training data required**.
 
+<br/>
 
-
-\## What the System Does
-
-
+<div align="center">
 
 | Capability | Method | Result |
+|:---|:---|:---:|
+| 🔍 **Semantic Search** | Sentence embeddings + ChromaDB HNSW | **87%** Precision@5 |
+| 🏷️ **Topic Classification** | Zero-shot cosine similarity | **79%** accuracy |
+| 🔵 **Complaint Clustering** | K-Means on embeddings + UMAP | Silhouette **0.41** |
+| ⚡ **Priority Triage** | RAG pipeline + heuristics | **74%** time saved |
+
+</div>
+
+<br/>
+
+---
+
+## 📊 Key Results
+
+<div align="center">
+
+```
+┌─────────────────────┬─────────────────────┬─────────────────────┬─────────────────────┐
+│   Semantic P@5      │  Zero-Shot Accuracy  │   Silhouette Score  │   Triage Saved      │
+│       87%           │        79%           │        0.41         │       74%           │
+│  +26pp vs keywords  │  no training data    │  good separation    │  ~70 min/agent/day  │
+└─────────────────────┴─────────────────────┴─────────────────────┴─────────────────────┘
+```
 
-|---|---|---|
+</div>
 
-| Semantic Search | Sentence embeddings + ChromaDB HNSW | 87% Precision@5 |
+<br/>
 
-| Topic Classification | Zero-shot cosine similarity | 79% accuracy, no training data |
+---
 
-| Complaint Clustering | K-Means on embeddings + UMAP | Silhouette score 0.41 |
+## 🗂️ Project Structure
 
-| Priority Triage | RAG pipeline + heuristics | 74% triage time reduction |
+```
+Amazon-NLP-pipeline/
+│
+├── 📓 notebooks/
+│   └── Amazon_Review_Insights_NLP.ipynb   — 15-step Colab pipeline
+│
+├── 📁 outputs/
+│   ├── amazon_reviews_labelled.csv        — labelled dataset (500 reviews)
+│   ├── cluster_keywords.json              — TF-IDF keywords per cluster
+│   ├── eda_overview.png                   — exploratory analysis charts
+│   ├── embedding_vectors.png              — 384-dim vector visualisation
+│   ├── elbow_silhouette.png               — optimal k selection
+│   ├── semantic_search.png                — similarity scores
+│   ├── topic_distribution.png             — zero-shot classification
+│   ├── summary_dashboard.png              — full pipeline summary
+│   └── umap_clusters.html                 — interactive 2D cluster map
+│
+├── 📄 reports/
+│   ├── evaluation_report.html             — interactive evaluation metrics
+│   └── business_integration.html          — dashboard · Slack · CRM guides
+│
+└── 📦 data/
+    └── README.md                          — dataset download instructions
+```
 
+<br/>
 
+---
 
-\---
+## 🔁 Pipeline — 15 Steps
 
+<div align="center">
 
+```
+ 01  Install dependencies       →   02  Import libraries
+ 03  Load CSV from local path   →   04  Schema inspection
+ 05  Explode multi-reviewer rows →  06  Exploratory data analysis
+ 07  Text pre-processing        →   08  Sentence embeddings (384-dim)
+ 09  Build ChromaDB vector index →  10  Semantic search + filters
+ 11  K-Means + UMAP projection  →   12  Zero-shot topic classification
+ 13  Full RAG pipeline          →   14  Summary dashboard
+                    15  Save all outputs
+```
 
-\## Project Structure
+</div>
 
-notebooks/    — Colab-ready Python pipeline
+<br/>
 
-outputs/      — Charts, labelled CSV, cluster keywords
+```python
+# The core function — the entire system in one call
+result = rag_pipeline("cable stopped working after 2 days")
 
-reports/      — Interactive evaluation and integration reports
+# Returns:
+# {
+#   "topic"    : "Quality Issue",
+#   "sentiment": "Negative",
+#   "priority" : "HIGH",
+#   "action"   : "Route to Quality Control team for defect review.",
+#   "retrieved": [ ... 3 similar past reviews with similarity scores ... ]
+# }
+```
 
-data/         — See data/README.md for dataset instructions
+<br/>
 
-\---
+---
 
+## 🛠️ Tech Stack
 
+<div align="center">
 
-\## Pipeline Steps
+| Layer | Technology | Purpose |
+|:---|:---|:---|
+| **Embeddings** | `sentence-transformers/all-MiniLM-L6-v2` | 384-dim dense vectors, free, no API key |
+| **Vector DB** | ChromaDB — HNSW index | Cosine similarity search, persisted to disk |
+| **Clustering** | `sklearn.KMeans` + `umap-learn` | Unsupervised complaint theme discovery |
+| **Classification** | Zero-shot cosine similarity | Topic labelling without training data |
+| **Visualisation** | `matplotlib` · `seaborn` · `plotly` | EDA, clustering, dashboard charts |
+| **API Layer** | FastAPI | Production wrapper for all integrations |
 
+</div>
 
+<br/>
 
-1\. Install dependencies
+---
 
-2\. Import libraries
+## 🚀 How to Run
 
-3\. Load dataset from local path
+**1 — Open the notebook in Google Colab**
 
-4\. Schema inspection and data quality checks
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com)
 
-5\. Explode multi-reviewer rows into individual reviews
+**2 — Get the dataset**
 
-6\. Exploratory data analysis
+Download `amazon.csv` from Kaggle and upload it when prompted in Step 3:
 
-7\. Text pre-processing (lowercase, stopwords, punctuation)
+[![Kaggle Dataset](https://img.shields.io/badge/Kaggle-amazon--sales--dataset-20BEFF?style=flat-square&logo=kaggle&logoColor=white)](https://www.kaggle.com/datasets/karkavelrajaj/amazon-sales-dataset)
 
-8\. Generate sentence embeddings — `all-MiniLM-L6-v2` (384 dimensions)
+**3 — Run cells top to bottom**
 
-9\. Build vector database — ChromaDB with HNSW index
+```bash
+# Each step builds on the previous one
+# Step 1  →  Install packages (run once, restart kernel after)
+# Step 3  →  Set your CSV_PATH or upload via Colab file picker
+# Step 15 →  All outputs saved and zipped for download
+```
 
-10\. Semantic search with metadata filters
+<br/>
 
-11\. K-Means clustering + UMAP 2D visualisation
+---
 
-12\. Zero-shot topic classification
+## 📋 Interactive Reports
 
-13\. Full RAG pipeline — retrieve, classify, recommend
+| Report | Description |
+|:---|:---|
+| [📊 System Evaluation](reports/evaluation_report.html) | Animated metrics — retrieval quality, classification accuracy, clustering coherence, human usefulness |
+| [🔗 Business Integration](reports/business_integration.html) | Dashboard · Slack Bot · CRM plugin — architecture diagrams and production code |
 
-14\. Summary dashboard
+> **Note:** Open the `.html` files locally or via GitHub Pages to view the interactive React reports.
 
-15\. Save all outputs
+<br/>
 
+---
 
+## 🔌 Business Integration
 
-\---
+The pipeline exposes one function. Any tool that can make an HTTP request can use it.
 
+<details>
+<summary><b>📊 Analytics Dashboard (FastAPI + React)</b></summary>
 
+```python
+@app.post("/classify")
+def classify(req: Ticket):
+    result = rag_pipeline(req.text, req.top_k)
+    return {
+        "topic"    : result["topic"],
+        "priority" : result["priority"],
+        "action"   : result["action"],
+        "retrieved": result["retrieved"],
+    }
+```
+</details>
 
-\## Tech Stack
+<details>
+<summary><b>💬 Slack Bot (auto-alerts on HIGH priority)</b></summary>
 
+```python
+def post_alert(ticket_text):
+    result = rag_pipeline(ticket_text)
+    if result["priority"] == "HIGH":
+        app.client.chat_postMessage(
+            channel="#support-alerts",
+            text=f"🔴 {result['topic']} — {result['action']}"
+        )
+```
+</details>
 
+<details>
+<summary><b>🔗 CRM Plugin (Freshdesk auto-tagging via AWS Lambda)</b></summary>
 
-| Layer | Technology |
+```python
+def lambda_handler(event, context):
+    text   = event["ticket_subject"] + " " + event["ticket_description"]
+    result = requests.post(NLP_API, json={"text": text}).json()
+    requests.put(f"{FRESHDESK}/tickets/{ticket_id}",
+                 json={"priority": PRIORITY_MAP[result["priority"]],
+                       "tags": [result["topic"]]})
+```
+</details>
 
-|---|---|
+<br/>
 
-| Embeddings | sentence-transformers — all-MiniLM-L6-v2 |
+---
 
-| Vector Database | ChromaDB — HNSW index, cosine distance |
+## ⚠️ Honest Limitations
 
-| Clustering | scikit-learn KMeans, umap-learn |
+| Limitation | Detail |
+|:---|:---|
+| No annotated test set | Accuracy figures are spot-check estimates (50–100 samples), not formally annotated |
+| 500-review subset | Full corpus is 10,500+ reviews — Colab CPU limits restricted embedding run |
+| English-only model | Hindi transliteration in some reviews may reduce embedding quality |
+| Zero-shot ceiling | ~79–82% without fine-tuning; labelled data could push this to 92%+ |
+| Static index | ChromaDB must be manually rebuilt when new reviews arrive |
 
-| Classification | Zero-shot cosine similarity |
+<br/>
 
-| Visualisation | matplotlib, seaborn, plotly |
+---
 
-| API layer | FastAPI (see evaluation code) |
+## 📦 Dataset
 
+**Amazon Sales Dataset** — 1,465 products · 9 categories · ~10,500 individual reviews after extraction
 
+<div align="center">
 
-\---
+[![Dataset](https://img.shields.io/badge/Source-Kaggle-20BEFF?style=flat-square&logo=kaggle&logoColor=white)](https://www.kaggle.com/datasets/karkavelrajaj/amazon-sales-dataset)
 
+*The `amazon.csv` file is not included in this repository. See `data/README.md` for download instructions.*
 
+</div>
 
-\## How to Run
+<br/>
 
+---
 
+<div align="center">
 
-1\. Open \[Google Colab](https://colab.research.google.com)
+**Built with** `sentence-transformers` · `ChromaDB` · `scikit-learn` · `umap-learn` · `FastAPI` · `plotly`
 
-2\. Upload `amazon\_nlp\_pipeline\_colab.py` as a notebook
+*University of Arizona · MSBA · NLP Based Insights · 2026*
 
-3\. Download `amazon.csv` from Kaggle (link in `data/README.md`)
-
-4\. Upload the CSV when prompted in Step 3
-
-5\. Run cells top to bottom
-
-
-
-\---
-
-
-
-\## Key Results
-
-
-
-\- Semantic search outperforms keyword search by \*\*+26 percentage points\*\*
-
-\- Zero-shot classification achieves \*\*79% accuracy\*\* with no labelled training data
-
-\- Automated triage takes \*\*\~2 seconds\*\* vs \~45 seconds manually — \*\*74% time saving\*\*
-
-\- Clusters are \*\*88% interpretable\*\* by business users without any explanation
-
-
-
-\---
-
-
-
-\## Dataset
-
-
-
-Amazon Sales Dataset — 1,465 products, 9 categories, \~10,500 individual reviews after extraction.
-
-Source: \[Kaggle — karkavelrajaj/amazon-sales-dataset](https://www.kaggle.com/datasets/karkavelrajaj/amazon-sales-dataset)
-
+</div>
