@@ -1,0 +1,468 @@
+import { useState, useEffect, useRef } from "react";
+
+const GFONT = document.createElement("link");
+GFONT.rel = "stylesheet";
+GFONT.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap";
+document.head.appendChild(GFONT);
+
+// ── Design: bold editorial dark — architectural, structured, modern ───────────
+const T = {
+  bg:     "#0b0c0f",
+  card:   "#111318",
+  border: "#1f2128",
+  text:   "#e8eaf0",
+  muted:  "#5a5f72",
+  dim:    "#2a2d3a",
+  blue:   "#3b7eff",
+  green:  "#00c896",
+  purple: "#a855f7",
+  amber:  "#f59e0b",
+  red:    "#ef4444",
+};
+
+// ── Data ─────────────────────────────────────────────────────────────────────
+const INTEGRATIONS = [
+  {
+    id: "dashboard",
+    label: "Analytics Dashboard",
+    tagline: "The command centre for support managers",
+    color: T.blue,
+    icon: "▦",
+    stack: [
+      { name: "FastAPI", role: "Backend API wrapper" },
+      { name: "React / Next.js", role: "Frontend framework" },
+      { name: "ChromaDB Cloud", role: "Managed vector index" },
+      { name: "Recharts", role: "Data visualisations" },
+      { name: "Cron + Celery", role: "Nightly re-clustering" },
+    ],
+    flow: ["New Review In", "POST /classify", "RAG Pipeline", "ChromaDB", "JSON Response", "React Dashboard", "Manager Action"],
+    features: [
+      { icon: "◈", text: "Live cluster map — complaint themes update as reviews arrive" },
+      { icon: "◈", text: "Semantic search bar — query by symptom, not exact keywords" },
+      { icon: "◈", text: "Priority queue sorted by AI urgency score — HIGH tickets surface first" },
+      { icon: "◈", text: "Trend charts — cluster volume week-over-week for product roadmap" },
+      { icon: "◈", text: "One-click export of any cluster to CSV for QC team escalation" },
+      { icon: "◈", text: "Agent feedback loop — thumbs up/down corrects future classifications" },
+    ],
+    steps: [
+      { n: "01", action: "Wrap rag_pipeline() in a FastAPI endpoint", detail: "POST /classify accepts {text, top_k} and returns topic, priority, action, retrieved docs" },
+      { n: "02", action: "Move ChromaDB to a persistent cloud instance", detail: "Use Railway, Render, or Pinecone so the index survives server restarts" },
+      { n: "03", action: "Build React frontend with Recharts cluster charts", detail: "Call GET /clusters/summary on page load to render cluster sizes and keywords" },
+      { n: "04", action: "Schedule nightly re-clustering job", detail: "Celery beat task re-runs KMeans at 2am, refreshes cluster_keywords.json" },
+    ],
+    code: `# api.py — FastAPI wrapper (run with: uvicorn api:app --reload)
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI(title="Amazon NLP API")
+
+class Ticket(BaseModel):
+    text  : str
+    top_k : int = 3
+
+@app.post("/classify")
+def classify(req: Ticket):
+    result = rag_pipeline(req.text, req.top_k)
+    return {
+        "topic"     : result["topic"],
+        "sentiment" : result["sentiment"],
+        "priority"  : result["priority"],
+        "action"    : result["action"],
+        "retrieved" : result["retrieved"],
+    }
+
+@app.get("/clusters/summary")
+def clusters():
+    return {
+        str(cl): {
+            "count"      : int((df_work["cluster"] == cl).sum()),
+            "keywords"   : cluster_keywords[cl],
+            "avg_rating" : round(float(
+                df_work[df_work["cluster"]==cl]["rating"].mean()), 2),
+        }
+        for cl in sorted(df_work["cluster"].unique())
+    }
+
+@app.get("/search")
+def search(query: str, top_k: int = 5):
+    results = semantic_search(query, top_k=top_k)
+    return results.to_dict(orient="records")`,
+  },
+  {
+    id: "slack",
+    label: "Slack Bot",
+    tagline: "Real-time alerts inside your team's workspace",
+    color: T.green,
+    icon: "◉",
+    stack: [
+      { name: "Slack Bolt (Python)", role: "Bot framework" },
+      { name: "Socket Mode", role: "Real-time event listener" },
+      { name: "FastAPI", role: "Shared classify endpoint" },
+      { name: "Cron scheduler", role: "Daily digest at 9am" },
+      { name: "SQLite", role: "Feedback log storage" },
+    ],
+    flow: ["New Review", "Webhook Trigger", "RAG Pipeline", "Priority Check", "Block Kit Format", "#support-alerts", "Agent Response"],
+    features: [
+      { icon: "◈", text: "🔴 HIGH tickets auto-posted to #support-alerts within 60 seconds" },
+      { icon: "◈", text: "Top-3 similar past tickets included — agents get instant context" },
+      { icon: "◈", text: "Daily 9am digest — cluster volume summary for the whole team" },
+      { icon: "◈", text: "/search <query> slash command — semantic search from inside Slack" },
+      { icon: "◈", text: "Emoji reaction feedback — 👍/👎 on each card improves the model" },
+      { icon: "◈", text: "Configurable thresholds — adjust what counts as HIGH per category" },
+    ],
+    steps: [
+      { n: "01", action: "Create a Slack App with bot token and Socket Mode enabled", detail: "Add chat:write and commands OAuth scopes. Install to your workspace." },
+      { n: "02", action: "Set up review ingestion trigger", detail: "Webhook or polling loop that fires when a new review hits your database" },
+      { n: "03", action: "Call rag_pipeline() and check priority", detail: "If priority == HIGH, format as Block Kit message and post to #support-alerts" },
+      { n: "04", action: "Register /search slash command", detail: "Handler calls semantic_search(command['text']) and returns formatted results" },
+    ],
+    code: `# slack_bot.py — Slack Bolt integration
+from slack_bolt import App
+from slack_bolt.adapter.socket_mode import SocketModeHandler
+
+app = App(token=SLACK_BOT_TOKEN)
+
+def post_alert(ticket_text: str):
+    result = rag_pipeline(ticket_text)
+    if result["priority"] != "HIGH":
+        return  # only alert on HIGH
+
+    similar = "\\n".join([
+        f"• [{r['similarity']:.2f}] {r['text'][:55]}…"
+        for r in result["retrieved"]
+    ])
+    blocks = [
+        {"type": "header", "text": {
+            "type": "plain_text",
+            "text": f"🔴 HIGH — {result['topic']}"
+        }},
+        {"type": "section", "text": {"type": "mrkdwn",
+            "text": (f"*Ticket:* {ticket_text[:100]}\\n"
+                     f"*Sentiment:* {result['sentiment']}\\n"
+                     f"*Action:* {result['action']}")
+        }},
+        {"type": "section", "text": {"type": "mrkdwn",
+            "text": f"*Similar past tickets:*\\n{similar}"
+        }},
+    ]
+    app.client.chat_postMessage(
+        channel="#support-alerts", blocks=blocks
+    )
+
+@app.command("/search")
+def handle_search(ack, respond, command):
+    ack()
+    df_r = semantic_search(command["text"], top_k=5)
+    lines = [
+        f"[{r['similarity']}] {r['review'][:55]}…"
+        for _, r in df_r.iterrows()
+    ]
+    respond(f"*Results for '{command['text']}':*\\n" + "\\n".join(lines))`,
+  },
+  {
+    id: "crm",
+    label: "CRM Plugin",
+    tagline: "Auto-tag tickets the moment they land in Freshdesk",
+    color: T.purple,
+    icon: "◇",
+    stack: [
+      { name: "AWS Lambda", role: "Serverless classify handler" },
+      { name: "Freshdesk API", role: "Ticket CRUD" },
+      { name: "API Gateway", role: "Webhook receiver" },
+      { name: "ChromaDB Cloud", role: "Shared vector index" },
+      { name: "EventBridge", role: "Nightly analytics push" },
+    ],
+    flow: ["Freshdesk Ticket", "ticket.created Webhook", "API Gateway", "AWS Lambda", "RAG Pipeline", "Freshdesk PATCH", "Auto-tagged Ticket"],
+    features: [
+      { icon: "◈", text: "Ticket auto-tagged with AI topic on creation — zero agent input" },
+      { icon: "◈", text: "Similar past tickets surface in the agent sidebar automatically" },
+      { icon: "◈", text: "Priority field set by AI — no manual triage needed for 80% of tickets" },
+      { icon: "◈", text: "Custom fields store topic, sentiment, action for Salesforce reports" },
+      { icon: "◈", text: "Agent /reclassify button triggers feedback loop for wrong labels" },
+      { icon: "◈", text: "Nightly EventBridge job pushes cluster analytics to Salesforce" },
+    ],
+    steps: [
+      { n: "01", action: "Register webhook in Freshdesk for ticket.created event", detail: "Point it to your API Gateway URL. Freshdesk POSTs the full ticket payload." },
+      { n: "02", action: "Lambda receives webhook, calls rag_pipeline()", detail: "Extract subject + description from the payload, pass as ticket text." },
+      { n: "03", action: "PATCH the Freshdesk ticket with AI results", detail: "Set priority (1–4 scale), tags (topic name), and custom fields." },
+      { n: "04", action: "Push cluster analytics to Salesforce nightly", detail: "EventBridge trigger runs a Lambda that reads df_work and posts to Salesforce Reports API." },
+    ],
+    code: `# lambda_handler.py — AWS Lambda for Freshdesk auto-tagging
+import json, requests
+
+FRESHDESK = "https://yourcompany.freshdesk.com/api/v2"
+FD_KEY    = "your_freshdesk_api_key"
+NLP_API   = "https://your-api.com/classify"
+
+PRIORITY_MAP = {"LOW": 1, "MEDIUM": 2, "HIGH": 4}
+
+def lambda_handler(event, context):
+    body   = json.loads(event["body"])
+    ticket_id = body["freshdesk_webhook"]["ticket_id"]
+    text = (body["freshdesk_webhook"]["ticket_subject"] + " " +
+            body["freshdesk_webhook"]["ticket_description"])
+
+    # Call the RAG classify API
+    resp   = requests.post(NLP_API, json={"text": text, "top_k": 3})
+    result = resp.json()
+
+    # Patch Freshdesk ticket with AI results
+    requests.put(
+        f"{FRESHDESK}/tickets/{ticket_id}",
+        auth=(FD_KEY, "X"),
+        json={
+            "priority" : PRIORITY_MAP[result["priority"]],
+            "tags"     : [result["topic"].replace(" ", "_")],
+            "custom_fields": {
+                "cf_ai_topic"     : result["topic"],
+                "cf_ai_sentiment" : result["sentiment"],
+                "cf_ai_action"    : result["action"],
+            },
+        }
+    )
+    return {"statusCode": 200, "body": json.dumps(result)}`,
+  },
+];
+
+// ── Components ────────────────────────────────────────────────────────────────
+
+function CopyButton({ code }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button onClick={() => { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      style={{
+        background: copied ? T.green : T.dim, color: copied ? "#000" : T.muted,
+        border: "none", borderRadius: 3, padding: "4px 12px", fontSize: 11,
+        cursor: "pointer", fontFamily: "JetBrains Mono", transition: "all 0.2s",
+      }}>
+      {copied ? "Copied ✓" : "Copy"}
+    </button>
+  );
+}
+
+function FlowDiagram({ nodes, color }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 4, padding: "16px 20px", background: "#080a0d", borderRadius: 6 }}>
+      {nodes.map((node, i) => (
+        <span key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{
+            padding: "5px 10px", borderRadius: 4, fontSize: 11,
+            fontFamily: "JetBrains Mono",
+            background: i === 0 ? T.dim : i === nodes.length - 1 ? `${color}20` : T.dim,
+            color: i === nodes.length - 1 ? color : i === 0 ? "#fff" : T.muted,
+            border: `1px solid ${i === nodes.length - 1 ? color : T.border}`,
+          }}>{node}</span>
+          {i < nodes.length - 1 && <span style={{ color: T.border, fontSize: 12 }}>→</span>}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export default function BusinessIntegration() {
+  const [mounted, setMounted] = useState(false);
+  const [active, setActive] = useState("dashboard");
+  const [showCode, setShowCode] = useState(false);
+  const integ = INTEGRATIONS.find(i => i.id === active);
+
+  useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
+
+  return (
+    <div style={{
+      background: T.bg, minHeight: "100vh",
+      fontFamily: "Outfit, sans-serif", color: T.text,
+      opacity: mounted ? 1 : 0, transition: "opacity 0.4s",
+    }}>
+
+      {/* Header */}
+      <div style={{ borderBottom: `1px solid ${T.border}`, padding: "0 0 0 0" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 40px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", paddingBottom: 28 }}>
+            <div>
+              <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.muted, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 10 }}>
+                Amazon Reviews NLP Pipeline · Business Integration
+              </div>
+              <h1 style={{ fontFamily: "Bebas Neue", fontSize: 48, color: T.text, margin: 0, letterSpacing: "0.04em", lineHeight: 1 }}>
+                How It Integrates Into<br />
+                <span style={{ color: integ.color }}>Your Business Tools</span>
+              </h1>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              {["Dashboard", "Slack Bot", "CRM Plugin"].map((l, i) => (
+                <div key={i} style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.muted, marginBottom: 4 }}>
+                  {["▦", "◉", "◇"][i]} {l}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab nav */}
+          <div style={{ display: "flex", gap: 0, marginBottom: -1 }}>
+            {INTEGRATIONS.map(ig => (
+              <button key={ig.id} onClick={() => { setActive(ig.id); setShowCode(false); }} style={{
+                padding: "12px 24px",
+                fontFamily: "Outfit", fontSize: 13, fontWeight: 500,
+                color: active === ig.id ? ig.color : T.muted,
+                background: active === ig.id ? T.card : "transparent",
+                border: `1px solid ${active === ig.id ? T.border : "transparent"}`,
+                borderBottom: active === ig.id ? `1px solid ${T.card}` : `1px solid ${T.border}`,
+                cursor: "pointer", transition: "all 0.15s",
+                borderRadius: "6px 6px 0 0",
+              }}>
+                {ig.icon} {ig.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "28px 40px 48px" }}>
+
+        {/* Intro strip */}
+        <div style={{
+          background: T.card, border: `1px solid ${T.border}`,
+          borderTop: `3px solid ${integ.color}`,
+          padding: "18px 24px", marginBottom: 24,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+        }}>
+          <div>
+            <div style={{ fontFamily: "Bebas Neue", fontSize: 22, color: T.text, letterSpacing: "0.04em" }}>{integ.label}</div>
+            <div style={{ fontSize: 13, color: T.muted, marginTop: 2 }}>{integ.tagline}</div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {integ.stack.slice(0, 3).map(s => (
+              <span key={s.name} style={{
+                background: `${integ.color}15`, border: `1px solid ${integ.color}30`,
+                color: integ.color, fontSize: 11, padding: "3px 10px",
+                borderRadius: 3, fontFamily: "JetBrains Mono",
+              }}>{s.name}</span>
+            ))}
+            <span style={{ fontSize: 11, color: T.muted, padding: "3px 6px", fontFamily: "JetBrains Mono" }}>+{integ.stack.length - 3} more</span>
+          </div>
+        </div>
+
+        {/* Data flow */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.muted, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 10 }}>
+            Data Flow
+          </div>
+          <FlowDiagram nodes={integ.flow} color={integ.color} />
+        </div>
+
+        {/* Two-column: features + steps */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+
+          {/* Features */}
+          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "22px 24px" }}>
+            <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.muted, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 16 }}>
+              Key Features
+            </div>
+            {integ.features.map((f, i) => (
+              <div key={i} style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "flex-start" }}>
+                <span style={{ color: integ.color, fontSize: 12, marginTop: 2, flexShrink: 0 }}>{f.icon}</span>
+                <span style={{ fontSize: 13, color: T.text, lineHeight: 1.5 }}>{f.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Integration steps */}
+          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "22px 24px" }}>
+            <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.muted, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 16 }}>
+              Integration Steps
+            </div>
+            {integ.steps.map((s, i) => (
+              <div key={i} style={{ display: "flex", gap: 14, marginBottom: 18, alignItems: "flex-start" }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 4,
+                  background: `${integ.color}20`, border: `1px solid ${integ.color}40`,
+                  color: integ.color, fontFamily: "JetBrains Mono", fontSize: 11,
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>{s.n}</div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: T.text, marginBottom: 3 }}>{s.action}</div>
+                  <div style={{ fontSize: 12, color: T.muted, lineHeight: 1.5 }}>{s.detail}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tech stack full list */}
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "18px 24px", marginBottom: 24 }}>
+          <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.muted, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 14 }}>
+            Full Technology Stack
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {integ.stack.map(s => (
+              <div key={s.name} style={{
+                background: "#080a0d", border: `1px solid ${T.border}`,
+                borderRadius: 5, padding: "8px 14px",
+              }}>
+                <div style={{ fontFamily: "JetBrains Mono", fontSize: 12, color: integ.color, fontWeight: 600 }}>{s.name}</div>
+                <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{s.role}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Code */}
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ fontFamily: "JetBrains Mono", fontSize: 10, color: T.muted, letterSpacing: "0.15em", textTransform: "uppercase" }}>
+              Production Code — {integ.label}
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <button onClick={() => setShowCode(c => !c)} style={{
+                background: T.dim, color: T.muted, border: "none",
+                borderRadius: 3, padding: "4px 12px", fontSize: 11,
+                cursor: "pointer", fontFamily: "JetBrains Mono",
+              }}>
+                {showCode ? "Hide ▲" : "Show ▼"}
+              </button>
+              <CopyButton code={integ.code} />
+            </div>
+          </div>
+
+          {showCode && (
+            <pre style={{
+              background: "#060709", margin: 0, padding: "20px 24px",
+              fontFamily: "JetBrains Mono", fontSize: 12, color: "#8892b0",
+              lineHeight: 1.7, overflowX: "auto",
+            }}>
+              <code>{integ.code}</code>
+            </pre>
+          )}
+
+          {!showCode && (
+            <div style={{ padding: "16px 24px", fontFamily: "JetBrains Mono", fontSize: 12, color: T.muted }}>
+              Click "Show" to reveal the production code for {integ.label}.
+            </div>
+          )}
+        </div>
+
+        {/* Bottom ROI bar */}
+        <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12 }}>
+          {[
+            { v: "~2s",     l: "Per ticket",      s: "auto triage" },
+            { v: "74%",     l: "Time saved",      s: "vs manual"   },
+            { v: "1 call",  l: "Integration",     s: "POST /classify" },
+            { v: "6",       l: "Topics",          s: "auto-labelled" },
+            { v: "0",       l: "Training labels", s: "needed" },
+            { v: "∞",       l: "Scale",           s: "stateless API" },
+          ].map(c => (
+            <div key={c.l} style={{
+              background: T.card, border: `1px solid ${T.border}`,
+              borderRadius: 6, padding: "12px 14px",
+              borderBottom: `2px solid ${integ.color}`,
+            }}>
+              <div style={{ fontFamily: "Bebas Neue", fontSize: 22, color: integ.color, letterSpacing: "0.05em" }}>{c.v}</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: T.text, marginTop: 2 }}>{c.l}</div>
+              <div style={{ fontSize: 10, color: T.muted }}>{c.s}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

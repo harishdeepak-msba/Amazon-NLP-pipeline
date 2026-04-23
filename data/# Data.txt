@@ -1,0 +1,9 @@
+# Data
+
+The `amazon.csv` file is not included in this repository due to file size.
+
+**Download from Kaggle:**
+https://www.kaggle.com/datasets/karkavelrajaj/amazon-sales-dataset
+
+After downloading, place `amazon.csv` in this folder and update the
+`CSV_PATH` variable in the notebook to point to it.
